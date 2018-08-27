@@ -1,0 +1,9 @@
+# executable files
+.exe
+iptv
+
+# macOS
+.DS_Store
+
+# data
+data*
