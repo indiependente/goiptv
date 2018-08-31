@@ -27,17 +27,16 @@ func scrape(tvchannel string, channel chan io.Reader, done chan struct{}) {
 	defer func() { done <- struct{}{} }()
 	var wg sync.WaitGroup
 
-	outData := make(chan bytes.Buffer, 20)
+	outData := make(chan *bytes.Buffer, 20)
 	qFormat := "https://www.google.co.uk/search?q=%s+site:pastebin.com&source=lnt&tbs=qdr:d&sa=X&ved=0ahUKEwipyeLr9o3dAhUIIMAKHfsmBdAQpwUIIA&biw=1308&bih=761"
 	link := fmt.Sprintf(qFormat, strings.Replace(tvchannel, " ", "+", -1))
 
-	var goroutines int
 	c := colly.NewCollector()
 	extensions.RandomUserAgent(c)
 	// Find all cite and get the text
 	c.OnHTML("cite", func(e *colly.HTMLElement) {
 		wg.Add(1)
-		log.WithFields(log.Fields{"goroutines": goroutines, "e.Text": e.Text}).Debug("element")
+		log.WithFields(log.Fields{"e.Text": e.Text}).Debug("element")
 		go scrapeTextArea(e.Text, outData, &wg)
 	})
 	// Set error handler
@@ -52,11 +51,15 @@ func scrape(tvchannel string, channel chan io.Reader, done chan struct{}) {
 	wg.Wait()
 	close(outData)
 	for b := range outData {
-		channel <- &b
+		log.WithFields(log.Fields{"bodyLen": b.Len()}).Debug("forLoop")
+		if b.Len() == 0 {
+			log.Errorf("Zero length buffer: %v", b)
+		}
+		channel <- b
 	}
 }
 
-func scrapeTextArea(url string, outCh chan bytes.Buffer, wg *sync.WaitGroup) {
+func scrapeTextArea(url string, outCh chan *bytes.Buffer, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	c := colly.NewCollector()
@@ -69,7 +72,8 @@ func scrapeTextArea(url string, outCh chan bytes.Buffer, wg *sync.WaitGroup) {
 		log.WithFields(log.Fields{"status": r.StatusCode}).Debug("response")
 		var b bytes.Buffer
 		b.Write(r.Body)
-		outCh <- b
+		log.WithFields(log.Fields{"bodyLen": b.Len()}).Debug("scrapeResponse")
+		outCh <- &b
 	})
 	url = strings.Replace(url, ".com/", ".com/raw/", 1)
 	log.WithFields(log.Fields{"url": url}).Debug("raw url")
