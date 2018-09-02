@@ -9,6 +9,7 @@ import (
 
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/extensions"
+	"github.com/indiependente/goiptv/filter"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -36,6 +37,9 @@ func scrape(tvchannel string, channel chan io.Reader, done chan struct{}) {
 	// Find all cite and get the text
 	c.OnHTML("cite", func(e *colly.HTMLElement) {
 		wg.Add(1)
+		if !strings.HasPrefix(e.Text, "http") {
+			e.Text = "https://" + e.Text
+		}
 		log.WithFields(log.Fields{"e.Text": e.Text}).Debug("element")
 		go scrapeTextArea(e.Text, outData, &wg)
 	})
@@ -70,8 +74,11 @@ func scrapeTextArea(url string, outCh chan *bytes.Buffer, wg *sync.WaitGroup) {
 
 	c.OnResponse(func(r *colly.Response) {
 		log.WithFields(log.Fields{"status": r.StatusCode}).Debug("response")
-		var b bytes.Buffer
-		b.Write(r.Body)
+		reader := bytes.NewReader(r.Body)
+		b, err := filter.Filter(reader)
+		if err != nil {
+			log.WithFields(log.Fields{"error": err}).Error("scan error")
+		}
 		log.WithFields(log.Fields{"bodyLen": b.Len()}).Debug("scrapeResponse")
 		outCh <- &b
 	})
