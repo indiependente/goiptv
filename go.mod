@@ -1,4 +1,4 @@
-module github.com/indiependente/goiptv
+module github.com/indiependente/goiptv/v2
 
 require (
 	github.com/PuerkitoBio/goquery v1.4.1 // indirect
