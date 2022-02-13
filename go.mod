@@ -1,7 +1,7 @@
 module github.com/indiependente/goiptv
 
 require (
-	github.com/gocolly/colly v1.0.0
+	github.com/gocolly/colly v1.2.0
 	github.com/sirupsen/logrus v1.8.1
 )
 
