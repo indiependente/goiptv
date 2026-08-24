@@ -4,7 +4,7 @@ go 1.26.1
 
 require (
 	github.com/gocolly/colly v1.2.0
-	github.com/sirupsen/logrus v1.9.4
+	github.com/sirupsen/logrus v1.10.1
 )
 
 require (
